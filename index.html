@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastos App - Control de Finanzas</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-wallet"></i> Gastos App</h2>
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item active" data-section="dashboard">
+                <a href="#"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            </li>
+            <li class="nav-item" data-section="income">
+                <a href="#"><i class="fas fa-arrow-up"></i> Ingresos</a>
+            </li>
+            <li class="nav-item" data-section="expenses">
+                <a href="#"><i class="fas fa-arrow-down"></i> Gastos</a>
+            </li>
+            <li class="nav-item" data-section="categories">
+                <a href="#"><i class="fas fa-tags"></i> Categorías</a>
+            </li>
+            <li class="nav-item" data-section="history">
+                <a href="#"><i class="fas fa-clock-rotate"></i> Historial</a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button id="exportDataBtn" class="btn btn-sm btn-outline"><i class="fas fa-download"></i> Exportar</button>
+            <button id="resetDataBtn" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Reset</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Dashboard Section -->
+        <section id="section-dashboard" class="section active">
+            <div class="section-header">
+                <h1><i class="fas fa-chart-pie"></i> Dashboard</h1>
+                <div class="month-selector">
+                    <select id="dashboardMonth" class="form-select">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                    <select id="dashboardYear" class="form-select"></select>
+                </div>
+            </div>
+            <div class="summary-cards">
+                <div class="card income-card">
+                    <div class="card-icon"><i class="fas fa-arrow-up"></i></div>
+                    <div class="card-info">
+                        <h3>Ingresos</h3>
+                        <p id="totalIncome">$0.00</p>
+                    </div>
+                </div>
+                <div class="card expense-card">
+                    <div class="card-icon"><i class="fas fa-arrow-down"></i></div>
+                    <div class="card-info">
+                        <h3>Gastos</h3>
+                        <p id="totalExpenses">$0.00</p>
+                    </div>
+                </div>
+                <div class="card balance-card">
+                    <div class="card-icon"><i class="fas fa-scale-balanced"></i></div>
+                    <div class="card-info">
+                        <h3>Balance</h3>
+                        <p id="totalBalance">$0.00</p>
+                    </div>
+                </div>
+                <div class="card savings-card">
+                    <div class="card-icon"><i class="fas fa-piggy-bank"></i></div>
+                    <div class="card-info">
+                        <h3>Tasa de Ahorro</h3>
+                        <p id="savingsRate">0%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Gastos por Categoría</h3>
+                    <canvas id="expenseChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-line"></i> Ingresos vs Gastos (Últimos 6 meses)</h3>
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            <div class="recent-transactions">
+                <h3><i class="fas fa-clock-rotate"></i> Transacciones Recientes</h3>
+                <div id="recentTransactionsList"></div>
+            </div>
+        </section>
+
+        <!-- Income Section -->
+        <section id="section-income" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-arrow-up"></i> Ingresos</h1>
+                <button class="btn btn-primary" id="addIncomeBtn"><i class="fas fa-plus"></i> Nuevo Ingreso</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="incomeTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incomeTableBody"></tbody>
+                </table>
+            </div>
+            <p class="empty-state" id="incomeEmpty">No hay ingresos registrados. ¡Agrega tu primer ingreso!</p>
+        </section>
+
+        <!-- Expenses Section -->
+        <section id="section-expenses" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-arrow-down"></i> Gastos</h1>
+                <button class="btn btn-primary" id="addExpenseBtn"><i class="fas fa-plus"></i> Nuevo Gasto</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="expenseTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody"></tbody>
+                </table>
+            </div>
+            <p class="empty-state" id="expenseEmpty">No hay gastos registrados. ¡Agrega tu primer gasto!</p>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="section-categories" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-tags"></i> Categorías</h1>
+                <button class="btn btn-primary" id="addCategoryBtn"><i class="fas fa-plus"></i> Nueva Categoría</button>
+            </div>
+            <div class="categories-grid" id="categoriesGrid"></div>
+        </section>
+
+        <!-- History Section -->
+        <section id="section-history" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-clock-rotate"></i> Historial</h1>
+                <div class="filters">
+                    <select id="filterType" class="form-select">
+                        <option value="all">Todos</option>
+                        <option value="income">Ingresos</option>
+                        <option value="expense">Gastos</option>
+                    </select>
+                    <select id="filterCategory" class="form-select">
+                        <option value="all">Todas las categorías</option>
+                    </select>
+                    <input type="month" id="filterDate" class="form-input">
+                    <button class="btn btn-secondary" id="clearFiltersBtn"><i class="fas fa-rotate-left"></i></button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+            <p class="empty-state" id="historyEmpty">No hay transacciones con los filtros seleccionados.</p>
+        </section>
+    </main>
+
+    <!-- Modal for Add/Edit -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Registro</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <form id="modalForm">
+                <input type="hidden" id="formId">
+                <input type="hidden" id="formType">
+                
+                <div class="form-group">
+                    <label for="formDescription">Descripción</label>
+                    <input type="text" id="formDescription" class="form-input" required placeholder="Ej: Sueldo, Comida, etc.">
+                </div>
+                
+                <div class="form-group">
+                    <label for="formAmount">Monto</label>
+                    <input type="number" id="formAmount" class="form-input" required min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label for="formCategory">Categoría</label>
+                    <select id="formCategory" class="form-select" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formDate">Fecha</label>
+                    <input type="date" id="formDate" class="form-input" required>
+                </div>
+
+                <div class="form-group" id="formExtraField">
+                    <label for="formExtra">Tipo de Ingreso</label>
+                    <select id="formExtra" class="form-select">
+                        <option value="regular">Regular</option>
+                        <option value="extra">Extraordinario</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="formCancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="formSubmit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Category -->
+    <div class="modal-overlay" id="categoryModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="categoryModalTitle">Nueva Categoría</h2>
+                <button class="modal-close" id="categoryModalClose">&times;</button>
+            </div>
+            <form id="categoryModalForm">
+                <input type="hidden" id="catFormId">
+                <input type="hidden" id="catFormType">
+                
+                <div class="form-group">
+                    <label for="catFormName">Nombre</label>
+                    <input type="text" id="catFormName" class="form-input" required placeholder="Ej: Comida, Transporte">
+                </div>
+                
+                <div class="form-group">
+                    <label for="catFormColor">Color</label>
+                    <input type="color" id="catFormColor" class="form-input-color" value="#4a90d9">
+                </div>
+                
+                <div class="form-group">
+                    <label for="catFormIcon">Ícono</label>
+                    <select id="catFormIcon" class="form-select">
+                        <option value="fa-utensils"><i class="fas fa-utensils"></i> Comida</option>
+                        <option value="fa-car"><i class="fas fa-car"></i> Transporte</option>
+                        <option value="fa-home"><i class="fas fa-home"></i> Casa</option>
+                        <option value="fa-gamepad"><i class="fas fa-gamepad"></i> Entretenimiento</option>
+                        <option value="fa-tshirt"><i class="fas fa-tshirt"></i> Ropa</option>
+                        <option value="fa-heartbeat"><i class="fas fa-heartbeat"></i> Salud</option>
+                        <option value="fa-graduation-cap"><i class="fas fa-graduation-cap"></i> Educación</option>
+                        <option value="fa-plane"><i class="fas fa-plane"></i> Viajes</option>
+                        <option value="fa-shopping-cart"><i class="fas fa-shopping-cart"></i> Compras</option>
+                        <option value="fa-bolt"><i class="fas fa-bolt"></i> Servicios</option>
+                        <option value="fa-briefcase"><i class="fas fa-briefcase"></i> Trabajo</option>
+                        <option value="fa-gift"><i class="fas fa-gift"></i> Regalos</option>
+                        <option value="fa-piggy-bank"><i class="fas fa-piggy-bank"></i> Ahorro</option>
+                        <option value="fa-box"><i class="fas fa-box"></i> Otros</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="catTypeGroup">
+                    <label>Tipo</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="catType" value="expense" checked> Gasto</label>
+                        <label><input type="radio" name="catType" value="income"> Ingreso</label>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="categoryFormCancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="categoryFormSubmit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModalOverlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Confirmar</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">¿Estás seguro de que deseas eliminar este elemento?</p>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="confirmCancel">Cancelar</button>
+                <button class="btn btn-danger" id="confirmOk">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
