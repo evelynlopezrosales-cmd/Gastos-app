@@ -24,14 +24,13 @@ const App = (() => {
         const date = document.getElementById('formDate').value;
         const extraType = document.getElementById('formExtra').value;
         const paymentMethod = document.getElementById('formPayment').value;
-        const savingsAmount = parseFloat(document.getElementById('formSavings').value) || 0;
 
         if (!description || !amount || !categoryId || !date) {
             alert('Por favor completa todos los campos.');
             return;
         }
 
-        const txData = { type, description, amount, categoryId, date, extraType, paymentMethod, savingsAmount };
+        const txData = { type, description, amount, categoryId, date, extraType, paymentMethod };
 
         if (id) {
             // Updating
@@ -39,19 +38,6 @@ const App = (() => {
         } else {
             // Creating
             Storage.addTransaction(txData);
-            // If it's an income with savings, transfer to ahorro wallet
-            if (type === 'income' && savingsAmount > 0 && savingsAmount <= amount) {
-                const netAmount = amount - savingsAmount;
-                // The income was already added to the selected wallet via addTransaction
-                // Now we need to move the savings portion from that wallet to ahorro
-                // But the wallet already has the full amount, so we transfer from paymentMethod to ahorro
-                Storage.transferBetweenWallets(
-                    paymentMethod, 
-                    'ahorro', 
-                    savingsAmount, 
-                    `Ahorro de: ${description}`
-                );
-            }
         }
 
         UI.hideModal();
@@ -430,6 +416,7 @@ const App = (() => {
         document.getElementById('filterCategory').addEventListener('change', handleFilterChange);
         document.getElementById('filterDate').addEventListener('change', handleFilterChange);
         document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+        document.getElementById('sortOrderBtn').addEventListener('click', UI.toggleHistorySortOrder);
 
         // Export / Reset
         document.getElementById('exportDataBtn').addEventListener('click', handleExport);

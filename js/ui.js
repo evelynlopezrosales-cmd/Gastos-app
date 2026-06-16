@@ -6,9 +6,24 @@ const UI = (() => {
         return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
 
+    // Get today's date as YYYY-MM-DD in local timezone
+    const getTodayLocal = () => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Parse YYYY-MM-DD as local date (not UTC)
+    const parseLocalDate = (dateStr) => {
+        const parts = dateStr.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    };
+
     // Format date to locale
     const formatDate = (dateStr) => {
-        const d = new Date(dateStr);
+        const d = parseLocalDate(dateStr);
         return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
@@ -31,10 +46,28 @@ const UI = (() => {
         
         document.getElementById('totalIncome').textContent = formatCurrency(summary.totalIncome);
         document.getElementById('totalExpenses').textContent = formatCurrency(summary.totalExpenses);
-        document.getElementById('totalBalance').textContent = formatCurrency(summary.balance);
-        document.getElementById('totalBalance').style.color = summary.balance >= 0 ? 'var(--income)' : 'var(--expense)';
+        
+        // Balance = dinero realmente disponible (efectivo + tarjeta, SIN ahorro)
+        const wallets = Storage.getWallets();
+        const availableBalance = wallets.efectivo.balance + wallets.tarjeta.balance;
+        document.getElementById('totalBalance').textContent = formatCurrency(availableBalance);
+        document.getElementById('totalBalance').style.color = availableBalance >= 0 ? 'var(--income)' : 'var(--expense)';
         document.getElementById('savingsRate').textContent = summary.savingsRate.toFixed(1) + '%';
         document.getElementById('savingsRate').style.color = summary.savingsRate >= 15 ? 'var(--income)' : summary.savingsRate >= 0 ? '#d69e2e' : 'var(--expense)';
+        
+        // Show total accumulated savings from ahorro wallet
+        const totalSavedEl = document.getElementById('totalSaved');
+        if (totalSavedEl) {
+            totalSavedEl.textContent = formatCurrency(wallets.ahorro.balance);
+            totalSavedEl.style.color = wallets.ahorro.balance > 0 ? 'var(--income)' : 'inherit';
+        }
+        
+        // Update savings rate card tooltip to show amount ahorrado this month
+        const savingsCard = document.querySelector('.savings-card');
+        const savingsText = savingsCard ? savingsCard.querySelector('p') : null;
+        if (savingsText && summary.totalSavings > 0) {
+            savingsText.title = `${formatCurrency(summary.totalSavings)} ahorrados este mes`;
+        }
 
         renderRecentTransactions(month, year);
         renderExpenseChart(month, year);
@@ -265,7 +298,22 @@ const UI = (() => {
         }).join('');
     };
 
+    // Sort order state for history (true = descending, false = ascending)
+    let historySortDescending = true;
+
     // ===== History Table =====
+    const toggleHistorySortOrder = () => {
+        historySortDescending = !historySortDescending;
+        const btn = document.getElementById('sortOrderBtn');
+        if (btn) {
+            btn.innerHTML = historySortDescending 
+                ? '<i class="fas fa-sort-down"></i><i class="fas fa-sort-up" style="opacity:0.3"></i>' 
+                : '<i class="fas fa-sort-up"></i><i class="fas fa-sort-down" style="opacity:0.3"></i>';
+            btn.title = historySortDescending ? 'Más reciente primero' : 'Más antiguo primero';
+        }
+        renderHistoryTable();
+    };
+
     const renderHistoryTable = () => {
         const filterType = document.getElementById('filterType').value;
         const filterCategory = document.getElementById('filterCategory').value;
@@ -282,12 +330,16 @@ const UI = (() => {
         if (filterDate) {
             const [year, month] = filterDate.split('-');
             tx = tx.filter(t => {
-                const d = new Date(t.date);
-                return d.getFullYear() === parseInt(year) && d.getMonth() === parseInt(month) - 1;
+                const parts = t.date.split('-');
+                return parseInt(parts[0]) === parseInt(year) && parseInt(parts[1]) === parseInt(month);
             });
         }
 
-        tx.sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (historySortDescending) {
+            tx.sort((a, b) => b.date.localeCompare(a.date));
+        } else {
+            tx.sort((a, b) => a.date.localeCompare(b.date));
+        }
 
         const tbody = document.getElementById('historyTableBody');
         const emptyState = document.getElementById('historyEmpty');
@@ -400,41 +452,12 @@ const UI = (() => {
         document.getElementById('formId').value = editData ? editData.id : '';
         document.getElementById('formDescription').value = editData ? editData.description : '';
         document.getElementById('formAmount').value = editData ? editData.amount : '';
-        document.getElementById('formDate').value = editData ? editData.date : new Date().toISOString().split('T')[0];
+        document.getElementById('formDate').value = editData ? editData.date : getTodayLocal();
 
         // Show/hide extra type field (only for income)
         const extraField = document.getElementById('formExtraField');
         extraField.style.display = type === 'income' ? 'block' : 'none';
         document.getElementById('formExtra').value = editData?.extraType || 'regular';
-
-        // Show/hide savings field (only for income)
-        const savingsField = document.getElementById('formSavingsField');
-        const savingsInput = document.getElementById('formSavings');
-        const savingsHint = document.getElementById('savingsHint');
-        if (type === 'income') {
-            savingsField.style.display = 'block';
-            // Calculate hint: if amount changes, update hint
-            const updateSavingsHint = () => {
-                const amount = parseFloat(document.getElementById('formAmount').value) || 0;
-                savingsHint.textContent = `De $${amount.toFixed(2)}`;
-                if (parseFloat(savingsInput.value) > amount) {
-                    savingsInput.value = amount;
-                }
-            };
-            document.getElementById('formAmount').addEventListener('input', updateSavingsHint);
-            savingsInput.value = editData?.savingsAmount || '';
-            updateSavingsHint();
-            // Validate savings does not exceed amount
-            savingsInput.addEventListener('input', () => {
-                const amount = parseFloat(document.getElementById('formAmount').value) || 0;
-                if (parseFloat(savingsInput.value) > amount) {
-                    savingsInput.value = amount;
-                }
-            });
-        } else {
-            savingsField.style.display = 'none';
-            savingsInput.value = '';
-        }
 
         // Show payment method field for both income and expense
         const paymentField = document.getElementById('formPaymentField');
@@ -581,5 +604,6 @@ const UI = (() => {
         renderWalletBalances,
         showTransferModal,
         hideTransferModal,
+        toggleHistorySortOrder,
     };
 })();

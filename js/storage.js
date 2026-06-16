@@ -174,7 +174,15 @@ const Storage = (() => {
     // Recalculate all wallet balances from scratch based on transactions
     const recalculateWalletBalances = () => {
         const wallets = JSON.parse(JSON.stringify(DEFAULT_WALLETS));
-        const tx = getTransactions();
+        let tx = getTransactions();
+
+        // Clean up old auto-generated savings transfer records (from previous version)
+        const oldTransferCount = tx.length;
+        tx = tx.filter(t => !(t.type === 'transfer' && t.description && t.description.startsWith('Ahorro de:')));
+        if (tx.length !== oldTransferCount) {
+            setData(KEYS.TRANSACTIONS, tx);
+        }
+
         tx.forEach(t => {
             if (t.type === 'income' && t.paymentMethod) {
                 if (wallets[t.paymentMethod]) {
@@ -214,12 +222,13 @@ const Storage = (() => {
             date: txData.date,
             extraType: txData.extraType || 'regular',
             paymentMethod: txData.paymentMethod || '', // 'tarjeta', 'efectivo', or '' for transfers
+            savingsAmount: txData.savingsAmount ? parseFloat(txData.savingsAmount) : 0,
             createdAt: new Date().toISOString(),
         };
         tx.push(newTx);
         setData(KEYS.TRANSACTIONS, tx);
 
-        // Update wallet balance
+        // Update wallet balance (full amount to the selected wallet)
         if (txData.paymentMethod && (txData.type === 'income' || txData.type === 'expense')) {
             const amount = txData.type === 'income' ? parseFloat(txData.amount) : -parseFloat(txData.amount);
             updateWalletBalance(txData.paymentMethod, amount);
@@ -243,6 +252,7 @@ const Storage = (() => {
         tx[idx] = { ...tx[idx], ...txData };
         if (txData.amount) tx[idx].amount = parseFloat(txData.amount);
         if (txData.description) tx[idx].description = txData.description.trim();
+        if (txData.savingsAmount !== undefined) tx[idx].savingsAmount = parseFloat(txData.savingsAmount);
         setData(KEYS.TRANSACTIONS, tx);
 
         // Apply new wallet balance change
@@ -282,11 +292,11 @@ const Storage = (() => {
         }
         if (month !== undefined && month !== null && year) {
             tx = tx.filter(t => {
-                const d = new Date(t.date);
-                return d.getMonth() === parseInt(month) && d.getFullYear() === parseInt(year);
+                const parts = t.date.split('-');
+                return parseInt(parts[1]) - 1 === parseInt(month) && parseInt(parts[0]) === parseInt(year);
             });
         }
-        return tx.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return tx.sort((a, b) => b.date.localeCompare(a.date));
     };
 
     const getTransactionsByMonth = (month, year) => {
@@ -297,13 +307,21 @@ const Storage = (() => {
         const tx = getTransactionsByMonth(month, year);
         let totalIncome = 0;
         let totalExpenses = 0;
+        let totalSavings = 0;
         tx.forEach(t => {
-            if (t.type === 'income') totalIncome += t.amount;
-            else if (t.type === 'expense') totalExpenses += t.amount;
+            if (t.type === 'income') {
+                totalIncome += t.amount;
+                if (t.savingsAmount) {
+                    totalSavings += t.savingsAmount;
+                }
+            } else if (t.type === 'expense') {
+                totalExpenses += t.amount;
+            }
         });
-        const balance = totalIncome - totalExpenses;
-        const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
-        return { totalIncome, totalExpenses, balance, savingsRate, count: tx.length };
+        const netIncome = totalIncome - totalSavings;
+        const balance = netIncome - totalExpenses;
+        const savingsRate = totalIncome > 0 ? ((totalSavings / totalIncome) * 100) : 0;
+        return { totalIncome, totalExpenses, totalSavings, balance, savingsRate, count: tx.length };
     };
 
     // Get monthly data for last N months for trend chart

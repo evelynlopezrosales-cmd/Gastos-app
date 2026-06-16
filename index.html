@@ -98,6 +98,13 @@
                         <p id="savingsRate">0%</p>
                     </div>
                 </div>
+                <div class="card" id="savedAmountCard">
+                    <div class="card-icon" style="background:#fefcbf;color:#c4a35a"><i class="fas fa-piggy-bank"></i></div>
+                    <div class="card-info">
+                        <h3>Ahorrado</h3>
+                        <p id="totalSaved">$0.00</p>
+                    </div>
+                </div>
             </div>
             <div class="charts-row">
                 <div class="chart-container">
@@ -217,6 +224,7 @@
                         <option value="all">Todas las categorías</option>
                     </select>
                     <input type="month" id="filterDate" class="form-input">
+                    <button class="btn btn-secondary" id="sortOrderBtn" title="Más reciente primero"><i class="fas fa-sort-down"></i><i class="fas fa-sort-up" style="opacity:0.3"></i></button>
                     <button class="btn btn-secondary" id="clearFiltersBtn"><i class="fas fa-rotate-left"></i></button>
                     <button class="btn btn-primary" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Exportar Excel</button>
                 </div>
@@ -277,14 +285,6 @@
                         <option value="regular">Regular</option>
                         <option value="extra">Extraordinario</option>
                     </select>
-                </div>
-
-                <div class="form-group" id="formSavingsField">
-                    <label for="formSavings">Apartar para Ahorro <span class="text-muted">(opcional)</span></label>
-                    <div class="savings-input-group">
-                        <input type="number" id="formSavings" class="form-input" min="0" step="0.01" placeholder="0.00">
-                        <span class="savings-hint" id="savingsHint">De $0.00</span>
-                    </div>
                 </div>
 
                 <div class="form-group" id="formPaymentField">
