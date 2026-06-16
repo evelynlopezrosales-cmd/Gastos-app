@@ -1204,6 +1204,11 @@ body.dark-mode .mobile-menu-toggle {
     color: #9a7fc4;
 }
 
+.wallet-card-ahorro .wallet-icon {
+    background: #fefcbf;
+    color: #c4a35a;
+}
+
 .wallet-card .wallet-info h3 {
     font-size: 0.82rem;
     color: var(--gray-500);
@@ -1230,6 +1235,30 @@ body.dark-mode .wallet-card .wallet-info h3 {
 
 body.dark-mode .wallet-card .wallet-info .wallet-balance {
     color: #e0e0e0;
+}
+
+/* ===== SAVINGS INPUT GROUP ===== */
+.savings-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.savings-input-group .form-input {
+    flex: 1;
+}
+
+.savings-hint {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.text-muted {
+    font-weight: 400;
+    color: var(--gray-500);
+    font-size: 0.8rem;
 }
 
 /* Dark mode toggle button */

@@ -177,13 +177,14 @@ const UI = (() => {
 
     // ===== Wallet Account Helpers =====
     const getPaymentMethodLabel = (method) => {
-        const labels = { tarjeta: 'Tarjeta', efectivo: 'Efectivo' };
+        const labels = { tarjeta: 'Tarjeta', efectivo: 'Efectivo', ahorro: 'Ahorro' };
         return labels[method] || method || '—';
     };
 
     const getPaymentMethodIcon = (method) => {
         if (method === 'tarjeta') return '<i class="fas fa-credit-card"></i>';
         if (method === 'efectivo') return '<i class="fas fa-money-bill-wave"></i>';
+        if (method === 'ahorro') return '<i class="fas fa-piggy-bank"></i>';
         return '';
     };
 
@@ -191,8 +192,10 @@ const UI = (() => {
         const wallets = Storage.getWallets();
         const tarjetaEl = document.getElementById('walletTarjetaBalance');
         const efectivoEl = document.getElementById('walletEfectivoBalance');
+        const ahorroEl = document.getElementById('walletAhorroBalance');
         if (tarjetaEl) tarjetaEl.textContent = formatCurrency(wallets.tarjeta.balance);
         if (efectivoEl) efectivoEl.textContent = formatCurrency(wallets.efectivo.balance);
+        if (ahorroEl) ahorroEl.textContent = formatCurrency(wallets.ahorro.balance);
     };
 
     // ===== Income Table =====
@@ -403,6 +406,35 @@ const UI = (() => {
         const extraField = document.getElementById('formExtraField');
         extraField.style.display = type === 'income' ? 'block' : 'none';
         document.getElementById('formExtra').value = editData?.extraType || 'regular';
+
+        // Show/hide savings field (only for income)
+        const savingsField = document.getElementById('formSavingsField');
+        const savingsInput = document.getElementById('formSavings');
+        const savingsHint = document.getElementById('savingsHint');
+        if (type === 'income') {
+            savingsField.style.display = 'block';
+            // Calculate hint: if amount changes, update hint
+            const updateSavingsHint = () => {
+                const amount = parseFloat(document.getElementById('formAmount').value) || 0;
+                savingsHint.textContent = `De $${amount.toFixed(2)}`;
+                if (parseFloat(savingsInput.value) > amount) {
+                    savingsInput.value = amount;
+                }
+            };
+            document.getElementById('formAmount').addEventListener('input', updateSavingsHint);
+            savingsInput.value = editData?.savingsAmount || '';
+            updateSavingsHint();
+            // Validate savings does not exceed amount
+            savingsInput.addEventListener('input', () => {
+                const amount = parseFloat(document.getElementById('formAmount').value) || 0;
+                if (parseFloat(savingsInput.value) > amount) {
+                    savingsInput.value = amount;
+                }
+            });
+        } else {
+            savingsField.style.display = 'none';
+            savingsInput.value = '';
+        }
 
         // Show payment method field for both income and expense
         const paymentField = document.getElementById('formPaymentField');

@@ -12,6 +12,7 @@ const Storage = (() => {
     const DEFAULT_WALLETS = {
         tarjeta: { name: 'Tarjeta', balance: 0 },
         efectivo: { name: 'Efectivo', balance: 0 },
+        ahorro: { name: 'Ahorro', balance: 0 },
     };
 
     // Default categories for a fresh start
@@ -117,9 +118,10 @@ const Storage = (() => {
             wallets = JSON.parse(JSON.stringify(DEFAULT_WALLETS));
             setData(KEYS.WALLETS, wallets);
         }
-        // Ensure both wallets exist
+        // Ensure all wallets exist
         if (wallets.tarjeta === undefined) wallets.tarjeta = { name: 'Tarjeta', balance: 0 };
         if (wallets.efectivo === undefined) wallets.efectivo = { name: 'Efectivo', balance: 0 };
+        if (wallets.ahorro === undefined) wallets.ahorro = { name: 'Ahorro', balance: 0 };
         return wallets;
     };
 

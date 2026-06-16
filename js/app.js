@@ -24,13 +24,14 @@ const App = (() => {
         const date = document.getElementById('formDate').value;
         const extraType = document.getElementById('formExtra').value;
         const paymentMethod = document.getElementById('formPayment').value;
+        const savingsAmount = parseFloat(document.getElementById('formSavings').value) || 0;
 
         if (!description || !amount || !categoryId || !date) {
             alert('Por favor completa todos los campos.');
             return;
         }
 
-        const txData = { type, description, amount, categoryId, date, extraType, paymentMethod };
+        const txData = { type, description, amount, categoryId, date, extraType, paymentMethod, savingsAmount };
 
         if (id) {
             // Updating
@@ -38,6 +39,19 @@ const App = (() => {
         } else {
             // Creating
             Storage.addTransaction(txData);
+            // If it's an income with savings, transfer to ahorro wallet
+            if (type === 'income' && savingsAmount > 0 && savingsAmount <= amount) {
+                const netAmount = amount - savingsAmount;
+                // The income was already added to the selected wallet via addTransaction
+                // Now we need to move the savings portion from that wallet to ahorro
+                // But the wallet already has the full amount, so we transfer from paymentMethod to ahorro
+                Storage.transferBetweenWallets(
+                    paymentMethod, 
+                    'ahorro', 
+                    savingsAmount, 
+                    `Ahorro de: ${description}`
+                );
+            }
         }
 
         UI.hideModal();
@@ -149,6 +163,70 @@ const App = (() => {
         a.download = `gastosapp_backup_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleExportExcel = () => {
+        // Get filtered transactions based on current filter values
+        const filterType = document.getElementById('filterType').value;
+        const filterCategory = document.getElementById('filterCategory').value;
+        const filterDate = document.getElementById('filterDate').value;
+
+        let tx = Storage.getTransactions();
+        
+        if (filterType !== 'all') {
+            tx = tx.filter(t => t.type === filterType);
+        }
+        if (filterCategory !== 'all') {
+            tx = tx.filter(t => t.categoryId === filterCategory);
+        }
+        if (filterDate) {
+            const [year, month] = filterDate.split('-');
+            tx = tx.filter(t => {
+                const d = new Date(t.date);
+                return d.getFullYear() === parseInt(year) && d.getMonth() === parseInt(month) - 1;
+            });
+        }
+
+        tx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Prepare data for Excel
+        const rows = tx.map(t => {
+            const cat = Storage.getCategoryById(t.categoryId);
+            const catName = cat ? cat.name : 'Sin categoría';
+            const typeLabel = t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Transferencia';
+            const account = t.type === 'transfer' 
+                ? (t.fromWallet && t.toWallet ? `${t.fromWallet} → ${t.toWallet}` : '—')
+                : (t.paymentMethod ? UI.getPaymentMethodLabel(t.paymentMethod) : '—');
+            return {
+                'Fecha': UI.formatDate(t.date),
+                'Tipo': typeLabel,
+                'Descripción': t.description,
+                'Categoría': catName,
+                'Cuenta': account,
+                'Monto': t.amount,
+                'Moneda': '$'
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        
+        // Column widths
+        ws['!cols'] = [
+            { wch: 14 }, // Fecha
+            { wch: 14 }, // Tipo
+            { wch: 30 }, // Descripción
+            { wch: 18 }, // Categoría
+            { wch: 18 }, // Cuenta
+            { wch: 12 }, // Monto
+            { wch: 8 },  // Moneda
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transacciones');
+
+        // Generate filename with date
+        const dateStr = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `gastosapp_${dateStr}.xlsx`);
     };
 
     const handleReset = () => {
@@ -355,6 +433,7 @@ const App = (() => {
 
         // Export / Reset
         document.getElementById('exportDataBtn').addEventListener('click', handleExport);
+        document.getElementById('exportExcelBtn').addEventListener('click', handleExportExcel);
         document.getElementById('resetDataBtn').addEventListener('click', handleReset);
 
         console.log('🚀 Gastos App initialized successfully!');
