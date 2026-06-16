@@ -174,6 +174,58 @@ const App = (() => {
         UI.switchSection(currentSection);
     };
 
+    // ===== Dark Mode =====
+    const toggleDarkMode = () => {
+        const body = document.body;
+        const btn = document.getElementById('darkModeToggle');
+        const icon = btn.querySelector('i');
+        
+        body.classList.toggle('dark-mode');
+        
+        if (body.classList.contains('dark-mode')) {
+            icon.className = 'fas fa-sun';
+            btn.innerHTML = '<i class="fas fa-sun"></i> Claro';
+            localStorage.setItem('gastosapp-darkmode', 'true');
+        } else {
+            icon.className = 'fas fa-moon';
+            btn.innerHTML = '<i class="fas fa-moon"></i> Oscuro';
+            localStorage.setItem('gastosapp-darkmode', 'false');
+        }
+    };
+
+    const loadDarkModePreference = () => {
+        const saved = localStorage.getItem('gastosapp-darkmode');
+        if (saved === 'true') {
+            document.body.classList.add('dark-mode');
+            const btn = document.getElementById('darkModeToggle');
+            btn.innerHTML = '<i class="fas fa-sun"></i> Claro';
+        }
+    };
+
+    // ===== Mobile Menu =====
+    const toggleMobileMenu = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        const icon = toggle.querySelector('i');
+        if (sidebar.classList.contains('open')) {
+            icon.className = 'fas fa-times';
+        } else {
+            icon.className = 'fas fa-bars';
+        }
+    };
+
+    const closeMobileMenu = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.getElementById('mobileMenuToggle');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        toggle.querySelector('i').className = 'fas fa-bars';
+    };
+
     // ===== Initialize =====
     const init = () => {
         // Ensure default data exists
@@ -188,14 +240,25 @@ const App = (() => {
         // Render initial dashboard
         UI.renderDashboard(now.getMonth(), now.getFullYear());
 
+        // Load dark mode preference
+        loadDarkModePreference();
+
         // ===== Event Listeners =====
 
-        // Navigation
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+        // Mobile menu
+        document.getElementById('mobileMenuToggle').addEventListener('click', toggleMobileMenu);
+        document.getElementById('mobileOverlay').addEventListener('click', closeMobileMenu);
+
+        // Navigation (close mobile menu on nav click)
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const section = item.dataset.section;
                 handleNavClick(section);
+                closeMobileMenu();
             });
         });
 

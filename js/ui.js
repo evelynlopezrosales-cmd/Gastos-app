@@ -193,10 +193,10 @@ const UI = (() => {
             const extraLabel = t.extraType === 'extra' ? ' (Extra)' : '';
             return `
                 <tr>
-                    <td>${formatDate(t.date)}</td>
-                    <td>${t.description}${extraLabel}</td>
-                    <td><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
-                    <td><span class="amount-positive">+${formatCurrency(t.amount)}</span></td>
+                    <td data-label="Fecha">${formatDate(t.date)}</td>
+                    <td data-label="Descripción">${t.description}${extraLabel}</td>
+                    <td data-label="Categoría"><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+                    <td data-label="Monto"><span class="amount-positive">+${formatCurrency(t.amount)}</span></td>
                     <td class="actions-cell">
                         <button class="btn-icon btn-edit" onclick="App.editTransaction('${t.id}')" title="Editar"><i class="fas fa-pen"></i></button>
                         <button class="btn-icon btn-delete" onclick="App.confirmDelete('${t.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
@@ -223,10 +223,10 @@ const UI = (() => {
             const cat = getCategoryInfo(t.categoryId);
             return `
                 <tr>
-                    <td>${formatDate(t.date)}</td>
-                    <td>${t.description}</td>
-                    <td><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
-                    <td><span class="amount-negative">-${formatCurrency(t.amount)}</span></td>
+                    <td data-label="Fecha">${formatDate(t.date)}</td>
+                    <td data-label="Descripción">${t.description}</td>
+                    <td data-label="Categoría"><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+                    <td data-label="Monto"><span class="amount-negative">-${formatCurrency(t.amount)}</span></td>
                     <td class="actions-cell">
                         <button class="btn-icon btn-edit" onclick="App.editTransaction('${t.id}')" title="Editar"><i class="fas fa-pen"></i></button>
                         <button class="btn-icon btn-delete" onclick="App.confirmDelete('${t.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
@@ -278,11 +278,11 @@ const UI = (() => {
             const sign = t.type === 'income' ? '+' : '-';
             return `
                 <tr>
-                    <td>${formatDate(t.date)}</td>
-                    <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
-                    <td>${t.description}</td>
-                    <td><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
-                    <td><span class="${amountClass}">${sign}${formatCurrency(t.amount)}</span></td>
+                    <td data-label="Fecha">${formatDate(t.date)}</td>
+                    <td data-label="Tipo"><span class="badge ${typeBadge}">${typeLabel}</span></td>
+                    <td data-label="Descripción">${t.description}</td>
+                    <td data-label="Categoría"><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+                    <td data-label="Monto"><span class="${amountClass}">${sign}${formatCurrency(t.amount)}</span></td>
                     <td class="actions-cell">
                         <button class="btn-icon btn-edit" onclick="App.editTransaction('${t.id}')" title="Editar"><i class="fas fa-pen"></i></button>
                         <button class="btn-icon btn-delete" onclick="App.confirmDelete('${t.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>

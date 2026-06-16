@@ -9,6 +9,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menú">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -32,6 +38,7 @@
             </li>
         </ul>
         <div class="sidebar-footer">
+            <button id="darkModeToggle" class="btn btn-sm btn-outline dark-mode-toggle" title="Modo oscuro"><i class="fas fa-moon"></i> Oscuro</button>
             <button id="exportDataBtn" class="btn btn-sm btn-outline"><i class="fas fa-download"></i> Exportar</button>
             <button id="resetDataBtn" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Reset</button>
         </div>

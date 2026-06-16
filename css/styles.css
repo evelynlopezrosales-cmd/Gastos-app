@@ -751,7 +751,44 @@ body {
     min-width: 160px;
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== MOBILE MENU TOGGLE ===== */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(184, 169, 201, 0.5);
+    transition: var(--transition);
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu-toggle:hover {
+    transform: scale(1.05);
+}
+
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    z-index: 99;
+}
+
+/* ===== RESPONSIVE - TABLETS (900px and down) ===== */
 @media (max-width: 900px) {
     .charts-row {
         grid-template-columns: 1fr;
@@ -760,16 +797,39 @@ body {
     .summary-cards {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .chart-container canvas {
+        max-height: 240px;
+    }
 }
 
+/* ===== RESPONSIVE - MOBILE (768px and down) ===== */
 @media (max-width: 768px) {
+    /* Mobile menu toggle visible */
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    .mobile-overlay.active {
+        display: block;
+    }
+
+    /* Sidebar becomes a drawer */
     .sidebar {
-        width: 70px;
-        overflow: hidden;
+        width: 260px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        box-shadow: none;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.2);
     }
 
     .sidebar-header h2 {
-        font-size: 0;
+        font-size: 1.4rem;
     }
 
     .sidebar-header h2 i {
@@ -777,22 +837,22 @@ body {
     }
 
     .nav-item a {
-        justify-content: center;
-        padding: 12px;
+        justify-content: flex-start;
+        padding: 12px 16px;
     }
 
     .nav-item a span,
     .nav-item a i + span {
-        display: none;
+        display: inline;
     }
 
     .sidebar-footer {
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .sidebar-footer .btn {
-        font-size: 0;
-        padding: 8px;
+        font-size: 0.8rem;
+        padding: 6px 12px;
         justify-content: center;
     }
 
@@ -800,13 +860,35 @@ body {
         font-size: 1rem;
     }
 
+    /* Main content full width */
     .main-content {
-        margin-left: 70px;
-        padding: 20px;
+        margin-left: 0;
+        padding: 16px;
+        padding-top: 70px;
     }
 
+    /* Summary cards 2 columns */
     .summary-cards {
         grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .card-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+
+    .card-info h3 {
+        font-size: 0.75rem;
+    }
+
+    .card-info p {
+        font-size: 1.2rem;
     }
 
     .section-header {
@@ -814,23 +896,264 @@ body {
         align-items: flex-start;
     }
 
+    .section-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .month-selector {
+        width: 100%;
+    }
+
+    .month-selector .form-select {
+        flex: 1;
+    }
+
+    /* Filters */
     .filters {
         width: 100%;
+        flex-direction: column;
     }
 
     .filters .form-select,
     .filters .form-input {
-        flex: 1;
-        min-width: 120px;
+        width: 100%;
+        min-width: unset;
+    }
+
+    /* Table becomes card layout on mobile */
+    .data-table thead {
+        display: none;
+    }
+
+    .data-table tbody tr {
+        display: block;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .data-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+        background: transparent;
+    }
+
+    .data-table td {
+        display: flex;
+        align-items: center;
+        padding: 4px 0;
+        border: none;
+        font-size: 0.85rem;
+        gap: 8px;
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--gray-500);
+        font-size: 0.75rem;
+        min-width: 80px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .actions-cell {
+        justify-content: flex-end;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .actions-cell::before {
+        display: none;
+    }
+
+    .btn-icon {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    /* Categories grid */
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .chart-container {
+        padding: 16px;
+    }
+
+    .chart-container canvas {
+        max-height: 200px;
+    }
+
+    .recent-transactions {
+        padding: 16px;
+    }
+
+    /* Modal adjustments */
+    .modal {
+        padding: 20px;
+        width: 95%;
+        max-width: 95%;
+        margin: 0 10px;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 
+/* ===== RESPONSIVE - SMALL PHONES (480px and down) ===== */
 @media (max-width: 480px) {
     .summary-cards {
         grid-template-columns: 1fr;
     }
 
     .main-content {
-        padding: 16px;
+        padding: 12px;
+        padding-top: 65px;
     }
+
+    .section-header h1 {
+        font-size: 1.2rem;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    .card-info p {
+        font-size: 1.1rem;
+    }
+
+    .categories-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .category-card {
+        padding: 14px;
+    }
+
+    .category-card .cat-icon {
+        font-size: 1.5rem;
+    }
+
+    .chart-container canvas {
+        max-height: 180px;
+    }
+
+    .data-table tbody tr {
+        padding: 12px;
+    }
+
+    .mobile-menu-toggle {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+        top: 10px;
+        left: 10px;
+    }
+}
+
+/* ===== DARK MODE (Manual toggle) ===== */
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d1b3d 50%, #1b2838 100%);
+    color: #e0e0e0;
+}
+
+body.dark-mode .card,
+body.dark-mode .chart-container,
+body.dark-mode .recent-transactions,
+body.dark-mode .table-container {
+    background: #2a2a3e;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .card-info h3 {
+    color: #a0a0b0;
+}
+
+body.dark-mode .card-info p {
+    color: #e0e0e0;
+}
+
+body.dark-mode .chart-container h3,
+body.dark-mode .recent-transactions h3 {
+    color: #c0c0d0;
+}
+
+body.dark-mode .form-input,
+body.dark-mode .form-select {
+    background: #1e1e32;
+    border-color: #3a3a52;
+    color: #e0e0e0;
+}
+
+body.dark-mode .modal {
+    background: #2a2a3e;
+}
+
+body.dark-mode .modal-header h2 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .data-table tbody tr:hover {
+    background: #33334a;
+}
+
+body.dark-mode .data-table td {
+    color: #d0d0e0;
+}
+
+body.dark-mode .transaction-item {
+    border-bottom-color: #3a3a52;
+}
+
+body.dark-mode .transaction-item .tx-details h4 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .transaction-item .tx-details span {
+    color: #9090a8;
+}
+
+body.dark-mode .section-header h1 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-secondary {
+    background: #3a3a52;
+    color: #c0c0d0;
+}
+
+body.dark-mode .btn-secondary:hover {
+    background: #4a4a62;
+}
+
+body.dark-mode .btn-edit,
+body.dark-mode .btn-delete {
+    background: #3a3a52;
+}
+
+body.dark-mode .sidebar-footer .btn-outline {
+    border-color: rgba(255,255,255,0.15);
+    color: var(--gray-300);
+}
+
+body.dark-mode .mobile-menu-toggle {
+    box-shadow: 0 4px 15px rgba(184, 169, 201, 0.3);
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+    cursor: pointer;
 }
