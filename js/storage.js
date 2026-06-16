@@ -5,6 +5,13 @@ const Storage = (() => {
     const KEYS = {
         TRANSACTIONS: 'gastosapp_transactions',
         CATEGORIES: 'gastosapp_categories',
+        WALLETS: 'gastosapp_wallets',
+    };
+
+    // Default wallets (accounts)
+    const DEFAULT_WALLETS = {
+        tarjeta: { name: 'Tarjeta', balance: 0 },
+        efectivo: { name: 'Efectivo', balance: 0 },
     };
 
     // Default categories for a fresh start
@@ -103,6 +110,87 @@ const Storage = (() => {
         return cats.find(c => c.id === id) || null;
     };
 
+    // ===== Wallets (Accounts) =====
+    const getWallets = () => {
+        let wallets = getData(KEYS.WALLETS);
+        if (!wallets || typeof wallets !== 'object') {
+            wallets = JSON.parse(JSON.stringify(DEFAULT_WALLETS));
+            setData(KEYS.WALLETS, wallets);
+        }
+        // Ensure both wallets exist
+        if (wallets.tarjeta === undefined) wallets.tarjeta = { name: 'Tarjeta', balance: 0 };
+        if (wallets.efectivo === undefined) wallets.efectivo = { name: 'Efectivo', balance: 0 };
+        return wallets;
+    };
+
+    const saveWallets = (wallets) => {
+        setData(KEYS.WALLETS, wallets);
+    };
+
+    const getWalletBalance = (walletId) => {
+        const wallets = getWallets();
+        return wallets[walletId] ? wallets[walletId].balance : 0;
+    };
+
+    const updateWalletBalance = (walletId, amount) => {
+        const wallets = getWallets();
+        if (!wallets[walletId]) return false;
+        wallets[walletId].balance += parseFloat(amount);
+        saveWallets(wallets);
+        return true;
+    };
+
+    const transferBetweenWallets = (fromWallet, toWallet, amount, description) => {
+        const wallets = getWallets();
+        if (!wallets[fromWallet] || !wallets[toWallet]) return false;
+        const amt = parseFloat(amount);
+        if (amt <= 0) return false;
+        if (wallets[fromWallet].balance < amt) return false;
+
+        wallets[fromWallet].balance -= amt;
+        wallets[toWallet].balance += amt;
+        saveWallets(wallets);
+
+        // Add a transfer transaction record
+        const tx = getTransactions();
+        const transferTx = {
+            id: generateId('tx'),
+            type: 'transfer',
+            description: description || `Transferencia de ${wallets[fromWallet].name} a ${wallets[toWallet].name}`,
+            amount: amt,
+            categoryId: '',
+            date: new Date().toISOString().split('T')[0],
+            fromWallet,
+            toWallet,
+            createdAt: new Date().toISOString(),
+        };
+        tx.push(transferTx);
+        setData(KEYS.TRANSACTIONS, tx);
+        return true;
+    };
+
+    // Recalculate all wallet balances from scratch based on transactions
+    const recalculateWalletBalances = () => {
+        const wallets = JSON.parse(JSON.stringify(DEFAULT_WALLETS));
+        const tx = getTransactions();
+        tx.forEach(t => {
+            if (t.type === 'income' && t.paymentMethod) {
+                if (wallets[t.paymentMethod]) {
+                    wallets[t.paymentMethod].balance += t.amount;
+                }
+            } else if (t.type === 'expense' && t.paymentMethod) {
+                if (wallets[t.paymentMethod]) {
+                    wallets[t.paymentMethod].balance -= t.amount;
+                }
+            } else if (t.type === 'transfer' && t.fromWallet && t.toWallet) {
+                if (wallets[t.fromWallet]) wallets[t.fromWallet].balance -= t.amount;
+                if (wallets[t.toWallet]) wallets[t.toWallet].balance += t.amount;
+            }
+        });
+        saveWallets(wallets);
+        return wallets;
+    };
+
     // ===== Transactions =====
     const getTransactions = () => {
         let tx = getData(KEYS.TRANSACTIONS);
@@ -117,16 +205,24 @@ const Storage = (() => {
         const tx = getTransactions();
         const newTx = {
             id: generateId('tx'),
-            type: txData.type, // 'income' or 'expense'
+            type: txData.type, // 'income' or 'expense' or 'transfer'
             description: txData.description.trim(),
             amount: parseFloat(txData.amount),
             categoryId: txData.categoryId,
             date: txData.date,
             extraType: txData.extraType || 'regular',
+            paymentMethod: txData.paymentMethod || '', // 'tarjeta', 'efectivo', or '' for transfers
             createdAt: new Date().toISOString(),
         };
         tx.push(newTx);
         setData(KEYS.TRANSACTIONS, tx);
+
+        // Update wallet balance
+        if (txData.paymentMethod && (txData.type === 'income' || txData.type === 'expense')) {
+            const amount = txData.type === 'income' ? parseFloat(txData.amount) : -parseFloat(txData.amount);
+            updateWalletBalance(txData.paymentMethod, amount);
+        }
+
         return newTx;
     };
 
@@ -134,15 +230,38 @@ const Storage = (() => {
         let tx = getTransactions();
         const idx = tx.findIndex(t => t.id === id);
         if (idx === -1) return false;
+        const oldTx = tx[idx];
+
+        // Reverse old wallet balance change
+        if (oldTx.paymentMethod && (oldTx.type === 'income' || oldTx.type === 'expense')) {
+            const oldAmount = oldTx.type === 'income' ? -oldTx.amount : oldTx.amount;
+            updateWalletBalance(oldTx.paymentMethod, oldAmount);
+        }
+
         tx[idx] = { ...tx[idx], ...txData };
         if (txData.amount) tx[idx].amount = parseFloat(txData.amount);
         if (txData.description) tx[idx].description = txData.description.trim();
         setData(KEYS.TRANSACTIONS, tx);
+
+        // Apply new wallet balance change
+        if (tx[idx].paymentMethod && (tx[idx].type === 'income' || tx[idx].type === 'expense')) {
+            const newAmount = tx[idx].type === 'income' ? tx[idx].amount : -tx[idx].amount;
+            updateWalletBalance(tx[idx].paymentMethod, newAmount);
+        }
+
         return true;
     };
 
     const deleteTransaction = (id) => {
         let tx = getTransactions();
+        const oldTx = tx.find(t => t.id === id);
+        if (oldTx) {
+            // Reverse wallet balance
+            if (oldTx.paymentMethod && (oldTx.type === 'income' || oldTx.type === 'expense')) {
+                const amount = oldTx.type === 'income' ? -oldTx.amount : oldTx.amount;
+                updateWalletBalance(oldTx.paymentMethod, amount);
+            }
+        }
         tx = tx.filter(t => t.id !== id);
         setData(KEYS.TRANSACTIONS, tx);
         return true;
@@ -178,7 +297,7 @@ const Storage = (() => {
         let totalExpenses = 0;
         tx.forEach(t => {
             if (t.type === 'income') totalIncome += t.amount;
-            else totalExpenses += t.amount;
+            else if (t.type === 'expense') totalExpenses += t.amount;
         });
         const balance = totalIncome - totalExpenses;
         const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
@@ -240,6 +359,7 @@ const Storage = (() => {
     const resetAllData = () => {
         setData(KEYS.TRANSACTIONS, []);
         setData(KEYS.CATEGORIES, [...DEFAULT_CATEGORIES]);
+        setData(KEYS.WALLETS, JSON.parse(JSON.stringify(DEFAULT_WALLETS)));
         return true;
     };
 
@@ -265,6 +385,14 @@ const Storage = (() => {
         getMonthlySummary,
         getMonthlyTrend,
         getExpensesByCategory,
+
+        // Wallets
+        getWallets,
+        saveWallets,
+        getWalletBalance,
+        updateWalletBalance,
+        transferBetweenWallets,
+        recalculateWalletBalances,
 
         // Utilities
         exportData,

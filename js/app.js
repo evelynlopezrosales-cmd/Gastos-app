@@ -23,13 +23,14 @@ const App = (() => {
         const categoryId = document.getElementById('formCategory').value;
         const date = document.getElementById('formDate').value;
         const extraType = document.getElementById('formExtra').value;
+        const paymentMethod = document.getElementById('formPayment').value;
 
         if (!description || !amount || !categoryId || !date) {
             alert('Por favor completa todos los campos.');
             return;
         }
 
-        const txData = { type, description, amount, categoryId, date, extraType };
+        const txData = { type, description, amount, categoryId, date, extraType, paymentMethod };
 
         if (id) {
             // Updating
@@ -226,11 +227,51 @@ const App = (() => {
         toggle.querySelector('i').className = 'fas fa-bars';
     };
 
+    // ===== Transfer =====
+    const handleOpenTransfer = () => {
+        UI.showTransferModal();
+    };
+
+    const handleTransferSubmit = (e) => {
+        e.preventDefault();
+        const from = document.getElementById('transferFrom').value;
+        const to = document.getElementById('transferTo').value;
+        const amount = document.getElementById('transferAmount').value;
+        const description = document.getElementById('transferDescription').value.trim();
+
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Por favor ingresa un monto válido.');
+            return;
+        }
+
+        if (from === to) {
+            alert('No puedes transferir a la misma cuenta.');
+            return;
+        }
+
+        const fromBalance = Storage.getWalletBalance(from);
+        if (parseFloat(amount) > fromBalance) {
+            alert(`No tienes suficiente saldo en ${UI.getPaymentMethodLabel(from)}. Saldo disponible: ${UI.formatCurrency(fromBalance)}`);
+            return;
+        }
+
+        const success = Storage.transferBetweenWallets(from, to, amount, description);
+        if (success) {
+            UI.hideTransferModal();
+            refreshCurrentSection();
+        } else {
+            alert('Error al realizar la transferencia.');
+        }
+    };
+
     // ===== Initialize =====
     const init = () => {
         // Ensure default data exists
         Storage.getCategories();
         Storage.getTransactions();
+
+        // Recalculate wallet balances from existing data (for migration)
+        Storage.recalculateWalletBalances();
 
         // Set current month/year
         const now = new Date();
@@ -266,6 +307,25 @@ const App = (() => {
         document.getElementById('addIncomeBtn').addEventListener('click', handleAddIncome);
         document.getElementById('addExpenseBtn').addEventListener('click', handleAddExpense);
         document.getElementById('addCategoryBtn').addEventListener('click', handleAddCategory);
+
+        // Transfer
+        document.getElementById('openTransferBtn').addEventListener('click', handleOpenTransfer);
+        document.getElementById('transferForm').addEventListener('submit', handleTransferSubmit);
+        document.getElementById('transferFrom').addEventListener('change', () => {
+            const from = document.getElementById('transferFrom').value;
+            const to = document.getElementById('transferTo');
+            to.value = from === 'tarjeta' ? 'efectivo' : 'tarjeta';
+        });
+        document.getElementById('transferTo').addEventListener('change', () => {
+            const to = document.getElementById('transferTo').value;
+            const from = document.getElementById('transferFrom');
+            from.value = to === 'tarjeta' ? 'efectivo' : 'tarjeta';
+        });
+        document.getElementById('transferCancel').addEventListener('click', UI.hideTransferModal);
+        document.getElementById('transferModalClose').addEventListener('click', UI.hideTransferModal);
+        document.getElementById('transferModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) UI.hideTransferModal();
+        });
 
         // Modal form submit
         document.getElementById('modalForm').addEventListener('submit', handleFormSubmit);

@@ -120,13 +120,38 @@
                 <h1><i class="fas fa-arrow-up"></i> Ingresos</h1>
                 <button class="btn btn-primary" id="addIncomeBtn"><i class="fas fa-plus"></i> Nuevo Ingreso</button>
             </div>
-            <div class="table-container">
+            <!-- Wallet Accounts Summary -->
+            <div class="wallet-summary">
+                <div class="wallet-card wallet-card-tarjeta" id="walletTarjetaCard">
+                    <div class="wallet-icon"><i class="fas fa-credit-card"></i></div>
+                    <div class="wallet-info">
+                        <h3>Tarjeta</h3>
+                        <p class="wallet-balance" id="walletTarjetaBalance">$0.00</p>
+                    </div>
+                </div>
+                <div class="wallet-card wallet-card-efectivo" id="walletEfectivoCard">
+                    <div class="wallet-icon"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="wallet-info">
+                        <h3>Efectivo</h3>
+                        <p class="wallet-balance" id="walletEfectivoBalance">$0.00</p>
+                    </div>
+                </div>
+                <div class="wallet-card wallet-card-transfer" id="openTransferBtn">
+                    <div class="wallet-icon"><i class="fas fa-arrows-left-right"></i></div>
+                    <div class="wallet-info">
+                        <h3>Transferir</h3>
+                        <p class="wallet-balance">Entre cuentas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="table-container" style="margin-top:20px">
                 <table class="data-table" id="incomeTable">
                     <thead>
                         <tr>
                             <th>Fecha</th>
                             <th>Descripción</th>
                             <th>Categoría</th>
+                            <th>Cuenta</th>
                             <th>Monto</th>
                             <th>Acciones</th>
                         </tr>
@@ -150,6 +175,7 @@
                             <th>Fecha</th>
                             <th>Descripción</th>
                             <th>Categoría</th>
+                            <th>Cuenta</th>
                             <th>Monto</th>
                             <th>Acciones</th>
                         </tr>
@@ -243,6 +269,14 @@
                         <option value="extra">Extraordinario</option>
                     </select>
                 </div>
+
+                <div class="form-group" id="formPaymentField">
+                    <label for="formPayment">Método de Pago / Cuenta</label>
+                    <select id="formPayment" class="form-select">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                    </select>
+                </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="formCancel">Cancelar</button>
@@ -304,6 +338,48 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="categoryFormCancel">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="categoryFormSubmit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div class="modal-overlay" id="transferModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-arrows-left-right"></i> Transferir entre cuentas</h2>
+                <button class="modal-close" id="transferModalClose">&times;</button>
+            </div>
+            <form id="transferForm">
+                <div class="form-group">
+                    <label for="transferFrom">Desde</label>
+                    <select id="transferFrom" class="form-select">
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="efectivo">Efectivo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="transferTo">Hacia</label>
+                    <select id="transferTo" class="form-select">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="transferAmount">Monto</label>
+                    <input type="number" id="transferAmount" class="form-input" required min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label for="transferDescription">Descripción (opcional)</label>
+                    <input type="text" id="transferDescription" class="form-input" placeholder="Ej: Pago de tarjeta, retiro...">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="transferCancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="transferSubmit">Transferir</button>
                 </div>
             </form>
         </div>

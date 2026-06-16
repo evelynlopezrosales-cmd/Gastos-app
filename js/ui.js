@@ -175,6 +175,26 @@ const UI = (() => {
         });
     };
 
+    // ===== Wallet Account Helpers =====
+    const getPaymentMethodLabel = (method) => {
+        const labels = { tarjeta: 'Tarjeta', efectivo: 'Efectivo' };
+        return labels[method] || method || '—';
+    };
+
+    const getPaymentMethodIcon = (method) => {
+        if (method === 'tarjeta') return '<i class="fas fa-credit-card"></i>';
+        if (method === 'efectivo') return '<i class="fas fa-money-bill-wave"></i>';
+        return '';
+    };
+
+    const renderWalletBalances = () => {
+        const wallets = Storage.getWallets();
+        const tarjetaEl = document.getElementById('walletTarjetaBalance');
+        const efectivoEl = document.getElementById('walletEfectivoBalance');
+        if (tarjetaEl) tarjetaEl.textContent = formatCurrency(wallets.tarjeta.balance);
+        if (efectivoEl) efectivoEl.textContent = formatCurrency(wallets.efectivo.balance);
+    };
+
     // ===== Income Table =====
     const renderIncomeTable = () => {
         const tx = Storage.getTransactionsByType('income');
@@ -191,11 +211,14 @@ const UI = (() => {
         tbody.innerHTML = tx.map(t => {
             const cat = getCategoryInfo(t.categoryId);
             const extraLabel = t.extraType === 'extra' ? ' (Extra)' : '';
+            const pmIcon = getPaymentMethodIcon(t.paymentMethod);
+            const pmLabel = getPaymentMethodLabel(t.paymentMethod);
             return `
                 <tr>
                     <td data-label="Fecha">${formatDate(t.date)}</td>
                     <td data-label="Descripción">${t.description}${extraLabel}</td>
                     <td data-label="Categoría"><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+                    <td data-label="Cuenta">${pmIcon} ${pmLabel}</td>
                     <td data-label="Monto"><span class="amount-positive">+${formatCurrency(t.amount)}</span></td>
                     <td class="actions-cell">
                         <button class="btn-icon btn-edit" onclick="App.editTransaction('${t.id}')" title="Editar"><i class="fas fa-pen"></i></button>
@@ -221,11 +244,14 @@ const UI = (() => {
 
         tbody.innerHTML = tx.map(t => {
             const cat = getCategoryInfo(t.categoryId);
+            const pmIcon = getPaymentMethodIcon(t.paymentMethod);
+            const pmLabel = getPaymentMethodLabel(t.paymentMethod);
             return `
                 <tr>
                     <td data-label="Fecha">${formatDate(t.date)}</td>
                     <td data-label="Descripción">${t.description}</td>
                     <td data-label="Categoría"><span class="category-tag" style="background:${cat.color}20;color:${cat.color}"><span class="category-dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+                    <td data-label="Cuenta">${pmIcon} ${pmLabel}</td>
                     <td data-label="Monto"><span class="amount-negative">-${formatCurrency(t.amount)}</span></td>
                     <td class="actions-cell">
                         <button class="btn-icon btn-edit" onclick="App.editTransaction('${t.id}')" title="Editar"><i class="fas fa-pen"></i></button>
@@ -373,14 +399,16 @@ const UI = (() => {
         document.getElementById('formAmount').value = editData ? editData.amount : '';
         document.getElementById('formDate').value = editData ? editData.date : new Date().toISOString().split('T')[0];
 
-        // Show/hide extra type field
+        // Show/hide extra type field (only for income)
         const extraField = document.getElementById('formExtraField');
-        if (type === 'income') {
-            extraField.style.display = 'block';
-        } else {
-            extraField.style.display = 'none';
-        }
+        extraField.style.display = type === 'income' ? 'block' : 'none';
         document.getElementById('formExtra').value = editData?.extraType || 'regular';
+
+        // Show payment method field for both income and expense
+        const paymentField = document.getElementById('formPaymentField');
+        paymentField.style.display = 'block';
+        const paymentSelect = document.getElementById('formPayment');
+        paymentSelect.value = editData?.paymentMethod || 'efectivo';
 
         // Populate categories based on type
         populateCategorySelect('formCategory', type);
@@ -443,6 +471,25 @@ const UI = (() => {
         cancelBtn.onclick = cleanup;
     };
 
+    // ===== Transfer Modal =====
+    const showTransferModal = () => {
+        const overlay = document.getElementById('transferModalOverlay');
+        const fromSelect = document.getElementById('transferFrom');
+        const toSelect = document.getElementById('transferTo');
+        // Swap values so "Desde" and "Hacia" don't default to same
+        fromSelect.value = 'tarjeta';
+        toSelect.value = 'efectivo';
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferDescription').value = '';
+        overlay.classList.add('active');
+        document.getElementById('transferAmount').focus();
+    };
+
+    const hideTransferModal = () => {
+        document.getElementById('transferModalOverlay').classList.remove('active');
+        document.getElementById('transferForm').reset();
+    };
+
     // ===== Navigation =====
     const switchSection = (section) => {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -461,6 +508,7 @@ const UI = (() => {
                 renderDashboard(month, year);
                 break;
             case 'income':
+                renderWalletBalances();
                 renderIncomeTable();
                 break;
             case 'expenses':
@@ -496,5 +544,10 @@ const UI = (() => {
         hideCategoryModal,
         showConfirmDialog,
         switchSection,
+        getPaymentMethodLabel,
+        getPaymentMethodIcon,
+        renderWalletBalances,
+        showTransferModal,
+        hideTransferModal,
     };
 })();
