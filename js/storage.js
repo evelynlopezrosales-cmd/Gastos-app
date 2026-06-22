@@ -142,6 +142,20 @@ const Storage = (() => {
         return true;
     };
 
+    // Get today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug on mobile)
+    const getTodayLocal = () => {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(now);
+        const year = parts.find(p => p.type === 'year').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
+        return `${year}-${month}-${day}`;
+    };
+
     const transferBetweenWallets = (fromWallet, toWallet, amount, description) => {
         const wallets = getWallets();
         if (!wallets[fromWallet] || !wallets[toWallet]) return false;
@@ -161,7 +175,7 @@ const Storage = (() => {
             description: description || `Transferencia de ${wallets[fromWallet].name} a ${wallets[toWallet].name}`,
             amount: amt,
             categoryId: '',
-            date: new Date().toISOString().split('T')[0],
+            date: getTodayLocal(),
             fromWallet,
             toWallet,
             createdAt: new Date().toISOString(),

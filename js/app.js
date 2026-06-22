@@ -168,12 +168,12 @@ const App = (() => {
         if (filterDate) {
             const [year, month] = filterDate.split('-');
             tx = tx.filter(t => {
-                const d = new Date(t.date);
-                return d.getFullYear() === parseInt(year) && d.getMonth() === parseInt(month) - 1;
+                const parts = t.date.split('-');
+                return parseInt(parts[0]) === parseInt(year) && parseInt(parts[1]) === parseInt(month);
             });
         }
 
-        tx.sort((a, b) => new Date(b.date) - new Date(a.date));
+        tx.sort((a, b) => b.date.localeCompare(a.date));
 
         // Prepare data for Excel
         const rows = tx.map(t => {

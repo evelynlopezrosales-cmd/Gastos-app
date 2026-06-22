@@ -8,23 +8,42 @@ const UI = (() => {
 
     // Get today's date as YYYY-MM-DD in local timezone
     const getTodayLocal = () => {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
+        const now = new Date();
+        // Use Intl.DateTimeFormat to get local date parts reliably across devices
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }).formatToParts(now);
+        const year = parts.find(p => p.type === 'year').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
         return `${year}-${month}-${day}`;
     };
 
     // Parse YYYY-MM-DD as local date (not UTC)
     const parseLocalDate = (dateStr) => {
+        if (!dateStr) return new Date();
         const parts = dateStr.split('-');
         return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     };
 
-    // Format date to locale
+    // Format date to locale using Intl.DateTimeFormat for better mobile compatibility
     const formatDate = (dateStr) => {
         const d = parseLocalDate(dateStr);
         return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+    
+    // Format date parts array for consistent date display (avoids new Date(string) UTC issue)
+    const getDateParts = (dateStr) => {
+        if (!dateStr || !dateStr.includes('-')) return null;
+        const parts = dateStr.split('-');
+        return {
+            year: parseInt(parts[0]),
+            month: parseInt(parts[1]) - 1,  // 0-based month
+            day: parseInt(parts[2])
+        };
     };
 
     // Get category display info
@@ -445,6 +464,19 @@ const UI = (() => {
     };
 
     // ===== Modal helpers =====
+    // Helper to set a date input's value using a YYYY-MM-DD string, avoiding the mobile UTC-offset bug
+    const setDateInputValue = (inputElement, dateStr) => {
+        if (!dateStr || !inputElement) return;
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return;
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;  // 0-based
+        const day = parseInt(parts[2]);
+        // Create date in LOCAL timezone (not UTC) to avoid mobile browsers shifting the displayed date
+        const localDate = new Date(year, month, day);
+        inputElement.valueAsDate = localDate;
+    };
+
     const showModal = (title, type, editData = null) => {
         const overlay = document.getElementById('modalOverlay');
         document.getElementById('modalTitle').textContent = title;
@@ -452,7 +484,9 @@ const UI = (() => {
         document.getElementById('formId').value = editData ? editData.id : '';
         document.getElementById('formDescription').value = editData ? editData.description : '';
         document.getElementById('formAmount').value = editData ? editData.amount : '';
-        document.getElementById('formDate').value = editData ? editData.date : getTodayLocal();
+        
+        const dateInput = document.getElementById('formDate');
+        setDateInputValue(dateInput, editData ? editData.date : getTodayLocal());
 
         // Show/hide extra type field (only for income)
         const extraField = document.getElementById('formExtraField');
